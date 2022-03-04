@@ -154,7 +154,7 @@ function image.new(params)
                     return true
                 end
                 opts.crop.x, opts.crop.w, left = opts.crop.x - left, opts.crop.w + left, 0
-            elseif left >= image.win_w or right <= 0 then
+            elseif left >= meow.win_w or right <= 0 then
                 return true
             end
             if top < 0 then
@@ -162,19 +162,19 @@ function image.new(params)
                     return true
                 end
                 opts.crop.y, opts.crop.h, top = opts.crop.y - top, opts.crop.h + top, 0
-            elseif top >= image.win_h or bottom <= 0 then
+            elseif top >= meow.win_h or bottom <= 0 then
                 return true
             end
 
-            if bottom > image.win_h then
-                opts.crop.h = opts.crop.h - (bottom - image.win_h)
+            if bottom > meow.win_h then
+                opts.crop.h = opts.crop.h - (bottom - meow.win_h)
             end
-            if right > image.win_w then
-                opts.crop.w = opts.crop.w - (right - image.win_w)
+            if right > meow.win_w then
+                opts.crop.w = opts.crop.w - (right - meow.win_w)
             end
 
-            local xcell, ycell = math.floor(left / image.cell_w), math.floor(top / image.cell_h)
-            cmd.X, cmd.Y = left % image.cell_w, top % image.cell_h
+            local xcell, ycell = math.floor(left / meow.cell_w), math.floor(top / meow.cell_h)
+            cmd.X, cmd.Y = left % meow.cell_w, top % meow.cell_h
             cmd.x, cmd.y, cmd.w, cmd.h = opts.crop.x, opts.crop.y, opts.crop.w, opts.crop.h
             cmd.p = opts.placement
             cmd.z = opts.z
@@ -259,9 +259,9 @@ function image.discover_win_size(cb)
                     len = len - 5
                     local idx = data:find ';'
                     if idx then
-                        image.win_h, image.win_w, image.cols, image.rows = tonumber(data:sub(1, idx - 1)), tonumber(data:sub(idx + 1)), meow.cols, meow.rows
-                        image.cell_w, image.cell_h = math.floor(image.win_w / image.cols), math.floor(image.win_h / image.rows)
-                        image.win_h, image.win_w = image.cell_h * image.rows, image.cell_w * image.cols
+                        meow.win_h, meow.win_w = tonumber(data:sub(1, idx - 1)), tonumber(data:sub(idx + 1))
+                        meow.cell_w, meow.cell_h = math.floor(meow.win_w / meow.cols), math.floor(meow.win_h / meow.rows)
+                        meow.win_h, meow.win_w = meow.cell_h * meow.rows, meow.cell_w * meow.cols
                     end
                 end
             end
@@ -271,7 +271,7 @@ function image.discover_win_size(cb)
             if meow.stdin then
                 meow.stdin:read_stop()
             end
-            if not image.win_w or not image.win_h then
+            if not meow.win_w or not meow.win_h then
                 image.discover_win_size(cb)
             else
                 cb()

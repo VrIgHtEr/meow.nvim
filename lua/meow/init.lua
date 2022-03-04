@@ -143,17 +143,19 @@ function meow.when_initialized(cb)
                         local idx = data:find ';'
                         if idx then
                             meow.win_h, meow.win_w = tonumber(data:sub(1, idx - 1)), tonumber(data:sub(idx + 1))
-                            meow.cell_w, meow.cell_h = math.floor(meow.win_w / meow.cols), math.floor(meow.win_h / meow.rows)
-                            meow.win_h, meow.win_w = meow.cell_h * meow.rows, meow.cell_w * meow.cols
-                            meow.stdin:read_stop()
-                            discovering = false
-                            local callbacks = discovery_callbacks
-                            discovery_callbacks = {}
-                            vim.schedule(function()
-                                for _, x in ipairs(callbacks) do
-                                    pcall(x)
-                                end
-                            end)
+                            if meow.win_h and meow.win_w then
+                                meow.cell_w, meow.cell_h = math.floor(meow.win_w / meow.cols), math.floor(meow.win_h / meow.rows)
+                                meow.win_h, meow.win_w = meow.cell_h * meow.rows, meow.cell_w * meow.cols
+                                meow.stdin:read_stop()
+                                discovering = false
+                                local callbacks = discovery_callbacks
+                                discovery_callbacks = {}
+                                vim.schedule(function()
+                                    for _, x in ipairs(callbacks) do
+                                        pcall(x)
+                                    end
+                                end)
+                            end
                         end
                     end
                 end

@@ -116,4 +116,59 @@ function meow.send_cmd(cmd, data)
     meow.end_transaction()
 end
 
+local discovering = false
+function meow.is_initialized()
+    return not discovering
+end
+local discovery_callbacks = {}
+
+function meow.when_initialized(cb)
+    if meow.supported() then
+        cb = type(cb) == 'function' and cb or nil
+        if discovering then
+            if cb then
+                table.insert(discovery_callbacks, cb)
+            end
+        else
+            discovering = true
+            if cb then
+                table.insert(discovery_callbacks, cb)
+            end
+            meow.stdin:read_start(function(_, data)
+                if data and discovering then
+                    local len = data:len()
+                    if len >= 8 and data:sub(len, len) == 't' and data:sub(1, 4) == '\x1b[4;' then
+                        data = data:sub(5, len - 1)
+                        len = len - 5
+                        local idx = data:find ';'
+                        if idx then
+                            meow.win_h, meow.win_w = tonumber(data:sub(1, idx - 1)), tonumber(data:sub(idx + 1))
+                            meow.cell_w, meow.cell_h = math.floor(meow.win_w / meow.cols), math.floor(meow.win_h / meow.rows)
+                            meow.win_h, meow.win_w = meow.cell_h * meow.rows, meow.cell_w * meow.cols
+                            meow.stdin:read_stop()
+                            discovering = false
+                            local callbacks = discovery_callbacks
+                            discovery_callbacks = {}
+                            vim.schedule(function()
+                                for _, x in ipairs(callbacks) do
+                                    pcall(x)
+                                end
+                            end)
+                        end
+                    end
+                end
+            end)
+            local function send_command()
+                if discovering then
+                    meow.write '\x1b[14t'
+                    vim.defer_fn(send_command, 40)
+                end
+            end
+            send_command()
+        end
+    end
+end
+meow.add_resize_event_handler(meow.when_initialized)
+meow.when_initialized()
+
 return meow

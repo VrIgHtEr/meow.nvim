@@ -249,35 +249,4 @@ function image.new(params)
     return i
 end
 
-function image.discover_win_size(cb)
-    if meow.supported() then
-        meow.stdin:read_start(function(_, data)
-            if data then
-                local len = data:len()
-                if len >= 8 and data:sub(len, len) == 't' and data:sub(1, 4) == '\x1b[4;' then
-                    data = data:sub(5, len - 1)
-                    len = len - 5
-                    local idx = data:find ';'
-                    if idx then
-                        meow.win_h, meow.win_w = tonumber(data:sub(1, idx - 1)), tonumber(data:sub(idx + 1))
-                        meow.cell_w, meow.cell_h = math.floor(meow.win_w / meow.cols), math.floor(meow.win_h / meow.rows)
-                        meow.win_h, meow.win_w = meow.cell_h * meow.rows, meow.cell_w * meow.cols
-                    end
-                end
-            end
-        end)
-        meow.write '\x1b[14t'
-        vim.defer_fn(function()
-            if meow.stdin then
-                meow.stdin:read_stop()
-            end
-            if not meow.win_w or not meow.win_h then
-                image.discover_win_size(cb)
-            else
-                cb()
-            end
-        end, 100)
-    end
-end
-
 return image

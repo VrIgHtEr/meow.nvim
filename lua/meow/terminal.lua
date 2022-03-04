@@ -103,4 +103,22 @@ function terminal.size()
     return uv.tty_get_winsize(stdout)
 end
 
+local resize_event_handlers = {}
+function terminal.add_resize_event_handler(cb)
+    resize_event_handlers[cb] = true
+end
+
+function terminal.remove_resize_event_handler(cb)
+    resize_event_handlers[cb] = nil
+end
+
+function terminal.on_resized()
+    terminal.cols, terminal.rows = terminal.size()
+    for cb in pairs(resize_event_handlers) do
+        pcall(cb, terminal.cols, terminal.rows)
+    end
+end
+
+terminal.cols, terminal.rows = terminal.size()
+vim.api.nvim_exec('augroup meow_terminal\nautocmd!\nautocmd VimResized * lua require"meow.terminal".on_resized()\naugroup END', true)
 return terminal

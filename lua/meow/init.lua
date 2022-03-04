@@ -1,7 +1,9 @@
-local kitty = {}
+local meow = {}
 local string, terminal, util = require 'toolshed.util.string', require 'meow.terminal', require 'toolshed.util'
 
-kitty.constants = {
+meow.cols, meow.rows = terminal.cols, terminal.rows
+
+meow.constants = {
     control_keys = {
         format = 'f',
         image_width = 's',
@@ -35,13 +37,13 @@ kitty.constants = {
     quiet = { ok = '1', errors = '2' },
 }
 
-function kitty.supported()
+function meow.supported()
     local term = vim.fn.getenv 'TERM'
     return term == 'xterm-kitty' or term == 'wezterm'
 end
 
 local valid_keys = {}
-for _, v in pairs(kitty.constants.control_keys) do
+for _, v in pairs(meow.constants.control_keys) do
     valid_keys[v] = true
 end
 
@@ -68,7 +70,7 @@ local function build_cmd(cmd)
     return table.concat(ret, ',')
 end
 
-function kitty.validate(opts)
+function meow.validate(opts)
     opts = opts == nil and {} or opts
     if type(opts) ~= 'table' then
         return util.error('TYPE', type(opts))
@@ -85,7 +87,7 @@ function kitty.validate(opts)
     return opts
 end
 
-function kitty.send_cmd(cmd, data)
+function meow.send_cmd(cmd, data)
     cmd = build_cmd(cmd)
     terminal.begin_transaction(true)
     cmd, data = cmd or '', chunks(string.base64_encode(data or ''))
@@ -116,4 +118,11 @@ function kitty.send_cmd(cmd, data)
     terminal.end_transaction()
 end
 
-return kitty
+meow.begin_transaction, meow.end_transaction = terminal.begin_transaction, terminal.end_transaction
+
+local function on_resized(cols, rows)
+    meow.cols, meow.rows = cols, rows
+end
+terminal.add_resize_event_handler(on_resized)
+
+return meow

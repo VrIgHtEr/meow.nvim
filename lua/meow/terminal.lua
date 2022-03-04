@@ -1,8 +1,7 @@
 local terminal = {}
 
 local uv = vim.loop
-local stdout = uv.new_tty(1, false)
-terminal.stdout = stdout
+terminal.stdin, terminal.stdout, terminal.stderr = uv.new_tty(0, true), uv.new_tty(1, false), uv.new_tty(2, false)
 
 local queue = require('toolshed.util.generic.queue').new()
 local ansi = require 'meow.ansi'
@@ -18,7 +17,7 @@ local function commit()
         tbl[index] = queue:dequeue()
     end
     vim.defer_fn(function()
-        local ret = uv.write(stdout, tbl)
+        local ret = uv.write(terminal.stdout, tbl)
         if not ret then
             writing = false
             faulted = true
@@ -100,7 +99,7 @@ function terminal.execute_at(row, col, func, ...)
 end
 
 function terminal.size()
-    return uv.tty_get_winsize(stdout)
+    return uv.tty_get_winsize(terminal.stdout)
 end
 
 local resize_event_handlers = {}

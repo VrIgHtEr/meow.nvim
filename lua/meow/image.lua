@@ -1,6 +1,5 @@
 local image = {}
-local util, terminal, kitty = require 'toolshed.util', require 'meow.terminal', require 'meow'
-local stdin = vim.loop.new_tty(0, true)
+local util, meow = require 'toolshed.util', require 'meow'
 
 local last_image_id = 0
 local image_ids = {}
@@ -128,7 +127,7 @@ function image.new(params)
     function i.transmit()
         if active then
             local data = util.read_file(i.src)
-            kitty.send_cmd({ a = 't', t = 'd', f = 100, i = id, q = 2 }, data)
+            meow.send_cmd({ a = 't', t = 'd', f = 100, i = id, q = 2 }, data)
         end
     end
 
@@ -179,15 +178,15 @@ function image.new(params)
             cmd.x, cmd.y, cmd.w, cmd.h = opts.crop.x, opts.crop.y, opts.crop.w, opts.crop.h
             cmd.p = opts.placement
             cmd.z = opts.z
-            terminal.execute_at(ycell + 1, xcell + 1, function()
-                kitty.send_cmd(cmd)
+            meow.execute_at(ycell + 1, xcell + 1, function()
+                meow.send_cmd(cmd)
             end)
             return true
         end
     end
     function i.hide()
         if active then
-            kitty.send_cmd { a = 'd', d = 'i', i = id }
+            meow.send_cmd { a = 'd', d = 'i', i = id }
         end
     end
 
@@ -225,7 +224,7 @@ function image.new(params)
             function p.hide()
                 if p_active and p_active then
                     if not hidden then
-                        kitty.send_cmd { a = 'd', d = 'i', i = id, p = p_id }
+                        meow.send_cmd { a = 'd', d = 'i', i = id, p = p_id }
                         hidden = true
                     end
                 end
@@ -251,8 +250,8 @@ function image.new(params)
 end
 
 function image.discover_win_size(cb)
-    if kitty.supported() then
-        stdin:read_start(function(_, data)
+    if meow.supported() then
+        meow.stdin:read_start(function(_, data)
             if data then
                 local len = data:len()
                 if len >= 8 and data:sub(len, len) == 't' and data:sub(1, 4) == '\x1b[4;' then
@@ -260,17 +259,17 @@ function image.discover_win_size(cb)
                     len = len - 5
                     local idx = data:find ';'
                     if idx then
-                        image.win_h, image.win_w, image.cols, image.rows = tonumber(data:sub(1, idx - 1)), tonumber(data:sub(idx + 1)), terminal.size()
+                        image.win_h, image.win_w, image.cols, image.rows = tonumber(data:sub(1, idx - 1)), tonumber(data:sub(idx + 1)), meow.cols, meow.rows
                         image.cell_w, image.cell_h = math.floor(image.win_w / image.cols), math.floor(image.win_h / image.rows)
                         image.win_h, image.win_w = image.cell_h * image.rows, image.cell_w * image.cols
                     end
                 end
             end
         end)
-        terminal.write '\x1b[14t'
+        meow.write '\x1b[14t'
         vim.defer_fn(function()
-            if stdin then
-                stdin:read_stop()
+            if meow.stdin then
+                meow.stdin:read_stop()
             end
             if not image.win_w or not image.win_h then
                 image.discover_win_size(cb)

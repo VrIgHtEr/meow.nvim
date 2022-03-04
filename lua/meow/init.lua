@@ -1,7 +1,5 @@
-local meow = {}
-local string, terminal, util = require 'toolshed.util.string', require 'meow.terminal', require 'toolshed.util'
-
-meow.cols, meow.rows = terminal.cols, terminal.rows
+local meow = setmetatable({}, { __index = require 'meow.terminal', __metatable = function() end })
+local string, util = require 'toolshed.util.string', require 'toolshed.util'
 
 meow.constants = {
     control_keys = {
@@ -89,7 +87,7 @@ end
 
 function meow.send_cmd(cmd, data)
     cmd = build_cmd(cmd)
-    terminal.begin_transaction(true)
+    meow.begin_transaction(true)
     cmd, data = cmd or '', chunks(string.base64_encode(data or ''))
     local num_chunks = #data
     if cmd == '' or num_chunks <= 1 then
@@ -98,7 +96,7 @@ function meow.send_cmd(cmd, data)
             table.insert(esc, data[1])
         end
         table.insert(esc, '\x1b\\')
-        terminal.write(table.concat(esc))
+        meow.write(table.concat(esc))
     else
         for i = 1, num_chunks do
             local esc = { '\x1b_G' }
@@ -112,17 +110,10 @@ function meow.send_cmd(cmd, data)
             table.insert(esc, i == num_chunks and '0;' or '1;')
             table.insert(esc, data[i])
             table.insert(esc, '\x1b\\')
-            terminal.write(table.concat(esc))
+            meow.write(table.concat(esc))
         end
     end
-    terminal.end_transaction()
+    meow.end_transaction()
 end
-
-meow.begin_transaction, meow.end_transaction = terminal.begin_transaction, terminal.end_transaction
-
-local function on_resized(cols, rows)
-    meow.cols, meow.rows = cols, rows
-end
-terminal.add_resize_event_handler(on_resized)
 
 return meow

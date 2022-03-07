@@ -41,9 +41,7 @@ function meow.supported()
         return false
     end
     local size = ioctl.resolution()
-    if not size or size.w == 0 or size.h == 0 then
-        return false
-    end
+    return size and size.w > 0 and size.h > 0
 end
 
 local valid_keys = {}

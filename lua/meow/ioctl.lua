@@ -1,7 +1,6 @@
 local M = {}
 
 local ffi = require 'ffi'
--- declare c things we may use
 ffi.cdef [[
     struct winsize {
         unsigned short ws_row;

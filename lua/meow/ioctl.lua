@@ -187,5 +187,4 @@ function M.resolution()
         return { h = wsize[0].ws_ypixel, w = wsize[0].ws_xpixel, rows = wsize[0].ws_row, cols = wsize[0].ws_col }
     end
 end
-print(vim.inspect(M.resolution()))
 return M

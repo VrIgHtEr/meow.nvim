@@ -1,5 +1,5 @@
 local meow = setmetatable({}, { __index = require 'meow.terminal', __metatable = function() end })
-local string, util = require 'toolshed.util.string', require 'toolshed.util'
+local string, util, ioctl = require 'toolshed.util.string', require 'toolshed.util', require 'meow.ioctl'
 
 meow.constants = {
     control_keys = {
@@ -37,7 +37,13 @@ meow.constants = {
 
 function meow.supported()
     local term = vim.fn.getenv 'TERM'
-    return term == 'xterm-kitty' or term == 'wezterm' or term == 'konsole-direct' or term == 'konsole-256color'
+    if term ~= 'xterm-kitty' and term ~= 'wezterm' and term ~= 'konsole-direct' and term ~= 'konsole-256color' then
+        return false
+    end
+    local size = ioctl.resolution()
+    if not size or size.w == 0 or size.h == 0 then
+        return false
+    end
 end
 
 local valid_keys = {}
@@ -134,39 +140,18 @@ function meow.when_initialized(cb)
             if cb then
                 table.insert(discovery_callbacks, cb)
             end
-            meow.stdin:read_start(function(_, data)
-                if data and discovering then
-                    local len = data:len()
-                    if len >= 8 and data:sub(len, len) == 't' and data:sub(1, 4) == '\x1b[4;' then
-                        data = data:sub(5, len - 1)
-                        len = len - 5
-                        local idx = data:find ';'
-                        if idx then
-                            meow.win_h, meow.win_w = tonumber(data:sub(1, idx - 1)), tonumber(data:sub(idx + 1))
-                            if meow.win_h and meow.win_w then
-                                meow.cell_w, meow.cell_h = math.floor(meow.win_w / meow.cols), math.floor(meow.win_h / meow.rows)
-                                meow.win_h, meow.win_w = meow.cell_h * meow.rows, meow.cell_w * meow.cols
-                                meow.stdin:read_stop()
-                                discovering = false
-                                local callbacks = discovery_callbacks
-                                discovery_callbacks = {}
-                                vim.schedule(function()
-                                    for _, x in ipairs(callbacks) do
-                                        pcall(x)
-                                    end
-                                end)
-                            end
-                        end
-                    end
+            local size = ioctl.resolution()
+            meow.win_h, meow.win_w, meow.rows, meow.cols = size.h, size.w, size.rows, size.cols
+            meow.cell_w, meow.cell_h = math.floor(meow.win_w / meow.cols), math.floor(meow.win_h / meow.rows)
+            meow.win_h, meow.win_w = meow.cell_h * meow.rows, meow.cell_w * meow.cols
+            discovering = false
+            local callbacks = discovery_callbacks
+            discovery_callbacks = {}
+            vim.schedule(function()
+                for _, x in ipairs(callbacks) do
+                    pcall(x)
                 end
             end)
-            local function send_command()
-                if discovering then
-                    meow.write '\x1b[14t'
-                    vim.defer_fn(send_command, 40)
-                end
-            end
-            send_command()
         end
     end
 end

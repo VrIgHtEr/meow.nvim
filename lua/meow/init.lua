@@ -37,7 +37,7 @@ meow.constants = {
 
 function meow.supported()
     local term = vim.fn.getenv 'TERM'
-    return term == 'xterm-kitty' or term == 'wezterm'
+    return term == 'xterm-kitty' or term == 'wezterm' or term == 'konsole-direct' or term == 'konsole-256color'
 end
 
 local valid_keys = {}

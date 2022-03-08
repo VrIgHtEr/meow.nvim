@@ -120,40 +120,24 @@ function meow.send_cmd(cmd, data)
     meow.end_transaction()
 end
 
-local discovering = false
+local initialized = false
 function meow.is_initialized()
-    return not discovering
+    return initialized
 end
-local discovery_callbacks = {}
 
 function meow.when_initialized(cb)
     if meow.supported() then
         cb = type(cb) == 'function' and cb or nil
-        if discovering then
-            if cb then
-                table.insert(discovery_callbacks, cb)
-            end
-        else
-            discovering = true
-            if cb then
-                table.insert(discovery_callbacks, cb)
-            end
-            local size = ioctl.resolution()
-            meow.win_h, meow.win_w, meow.rows, meow.cols = size.h, size.w, size.rows, size.cols
-            meow.cell_w, meow.cell_h = math.floor(meow.win_w / meow.cols), math.floor(meow.win_h / meow.rows)
-            meow.win_h, meow.win_w = meow.cell_h * meow.rows, meow.cell_w * meow.cols
-            discovering = false
-            local callbacks = discovery_callbacks
-            discovery_callbacks = {}
-            vim.schedule(function()
-                for _, x in ipairs(callbacks) do
-                    pcall(x)
-                end
-            end)
-        end
+        local size = ioctl.resolution()
+        meow.win_h, meow.win_w, meow.rows, meow.cols = size.h, size.w, size.rows, size.cols
+        meow.cell_w, meow.cell_h = math.floor(meow.win_w / meow.cols), math.floor(meow.win_h / meow.rows)
+        meow.win_h, meow.win_w = meow.cell_h * meow.rows, meow.cell_w * meow.cols
+        initialized = true
+        pcall(cb)
+    else
+        vim.notify('Kitty graphics protocol is not supported!', 'error', { title = 'meow.nvim' })
     end
 end
 meow.add_resize_event_handler(meow.when_initialized)
-meow.when_initialized()
 
 return meow
